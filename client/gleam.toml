@@ -1,0 +1,12 @@
+name = "karaoke_client"
+version = "1.0.0"
+target = "javascript"
+
+[dependencies]
+gleam_stdlib = ">= 0.34.0 and < 2.0.0"
+gleam_json = ">= 1.0.0 and < 2.0.0"
+lustre = ">= 4.0.0 and < 5.0.0"
+lustre_http = ">= 4.0.0 and < 5.0.0"
+
+[dev-dependencies]
+lustre_dev_tools = ">= 1.0.0 and < 2.0.0"
