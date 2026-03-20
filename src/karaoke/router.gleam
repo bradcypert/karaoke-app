@@ -1,18 +1,17 @@
-import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
 import gleam/http.{Delete, Get, Post, Put}
 import gleam/int
 import gleam/json
-import gleam/result
 import gleam/string
 import wisp.{type Request, type Response}
 import karaoke/queue.{type Message}
 import karaoke/pages
 
 pub fn handle_request(req: Request, actor: Subject(Message)) -> Response {
-  use req <- wisp.log_request(req)
-  use req <- wisp.rescue_crashes(req)
-  use req <- wisp.serve_static(req, under: "/static", from: "./priv/static")
+  use <- wisp.log_request(req)
+  use <- wisp.rescue_crashes
+  use <- wisp.serve_static(req, under: "/static", from: "./priv/static")
 
   case wisp.path_segments(req) {
     [] -> handle_index(req)
@@ -57,18 +56,12 @@ fn handle_submit(req: Request, actor: Subject(Message)) -> Response {
   case req.method {
     Post -> {
       use json_body <- wisp.require_json(req)
-      let result = {
-        use name <- result.try(
-          json_body
-          |> dynamic.field("name", dynamic.string),
-        )
-        use song <- result.try(
-          json_body
-          |> dynamic.field("song", dynamic.string),
-        )
-        Ok(#(name, song))
+      let submit_decoder = {
+        use name <- decode.field("name", decode.string)
+        use song <- decode.field("song", decode.string)
+        decode.success(#(name, song))
       }
-      case result {
+      case decode.run(json_body, submit_decoder) {
         Ok(#(name, song)) -> {
           let name = string.trim(name)
           let song = string.trim(song)
@@ -119,8 +112,11 @@ fn handle_move(
           )
         Ok(id) -> {
           use json_body <- wisp.require_json(req)
-          let dir_result = dynamic.field("direction", dynamic.string)(json_body)
-          case dir_result {
+          let dir_decoder = {
+            use dir <- decode.field("direction", decode.string)
+            decode.success(dir)
+          }
+          case decode.run(json_body, dir_decoder) {
             Error(_) ->
               json_response(
                 json.object([

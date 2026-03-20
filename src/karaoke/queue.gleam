@@ -23,10 +23,14 @@ type State {
 }
 
 pub fn start() -> Result(Subject(Message), actor.StartError) {
-  actor.start(State(items: [], next_id: 1), loop)
+  let assert Ok(started) =
+    actor.new(State(items: [], next_id: 1))
+    |> actor.on_message(loop)
+    |> actor.start
+  Ok(started.data)
 }
 
-fn loop(msg: Message, state: State) -> actor.Next(Message, State) {
+fn loop(state: State, msg: Message) -> actor.Next(State, Message) {
   case msg {
     GetAll(reply) -> {
       process.send(reply, state.items)
@@ -77,11 +81,11 @@ fn loop(msg: Message, state: State) -> actor.Next(Message, State) {
 // Public API helpers
 
 pub fn get_all(actor: Subject(Message)) -> List(Submission) {
-  process.call(actor, fn(reply) { GetAll(reply) }, 1000)
+  process.call(actor, 1000, fn(reply) { GetAll(reply) })
 }
 
 pub fn add(actor: Subject(Message), name: String, song: String) -> Int {
-  process.call(actor, fn(reply) { Add(reply, name, song) }, 1000)
+  process.call(actor, 1000, fn(reply) { Add(reply, name, song) })
 }
 
 pub fn move(
@@ -89,11 +93,11 @@ pub fn move(
   id: Int,
   direction: Direction,
 ) -> Result(Nil, String) {
-  process.call(actor, fn(reply) { Move(reply, id, direction) }, 1000)
+  process.call(actor, 1000, fn(reply) { Move(reply, id, direction) })
 }
 
 pub fn remove(actor: Subject(Message), id: Int) -> Result(Nil, String) {
-  process.call(actor, fn(reply) { Remove(reply, id) }, 1000)
+  process.call(actor, 1000, fn(reply) { Remove(reply, id) })
 }
 
 // Internal helpers
